@@ -1,0 +1,8 @@
+{
+    "platformOptions": {
+        "Coverlet": {
+            "exclude": "[Cronos]*,[Humanizer]*",
+            "excludeByAttribute": "ExcludeFromCodeCoverage,ExcludeFromCodeCoverageAttribute,GeneratedCodeAttribute,CompilerGeneratedAttribute"
+        }
+    }
+}

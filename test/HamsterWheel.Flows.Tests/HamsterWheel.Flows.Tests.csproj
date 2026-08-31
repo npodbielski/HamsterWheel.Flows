@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+        <PackageReference Include="Microsoft.Extensions.Logging" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="testconfig.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\HamsterWheel.Flows.Abstractions\HamsterWheel.Flows.Abstractions.csproj" />
+      <ProjectReference Include="..\..\src\HamsterWheel.Flows\HamsterWheel.Flows.csproj" />
+    </ItemGroup>
+
+</Project>

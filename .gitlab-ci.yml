@@ -1,0 +1,90 @@
+image: mcr.microsoft.com/dotnet/sdk:10.0
+
+variables:
+  OBJECTS_DIRECTORY: 'obj'
+  NUGET_PACKAGES_DIRECTORY: '.nuget'
+  SOURCE_CODE_PATH: 'src'
+  TEST_RESULTS_DIR: './test-results'
+  FF_NETWORK_PER_BUILD: "true"
+
+cache:
+  key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+  paths:
+    - '$SOURCE_CODE_PATH$OBJECTS_DIRECTORY/project.assets.json'
+    - '$SOURCE_CODE_PATH$OBJECTS_DIRECTORY/*.csproj.nuget.*'
+    - '$NUGET_PACKAGES_DIRECTORY'
+  policy: pull-push
+
+before_script:
+  # Configure GitLab package registry as a NuGet source
+  - 'dotnet nuget add source "${CI_API_V4_URL}/groups/69/-/packages/nuget/index.json" --name group --username gitlab-ci-token --password $CI_JOB_TOKEN --store-password-in-clear-text'
+  - 'dotnet restore HamsterWheel.Flows.slnx --packages $NUGET_PACKAGES_DIRECTORY'
+
+build:
+  stage: build
+  script:
+    - 'dotnet build --no-restore'
+
+style-check:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  script:
+    - dotnet format HamsterWheel.Flows.slnx style --verify-no-changes --severity error
+
+tests:
+  stage: test
+  variables:
+    INTEGRATION_TEST_RESULTS_DIR: './integration-test-results'
+  script:
+    # unit tests with code coverage (the coverage gate reads this run only)
+    - 'dotnet test --no-restore test/HamsterWheel.Flows.Tests/HamsterWheel.Flows.Tests.csproj --coverlet --coverlet-output-format cobertura --results-directory $TEST_RESULTS_DIR --report-junit --report-junit-filename rspec.xml'
+    # integration tests (no coverage - they exercise the library end-to-end)
+    - 'dotnet test --no-restore test/HamsterWheel.Flows.IntegrationTests/HamsterWheel.Flows.IntegrationTests.csproj --results-directory $INTEGRATION_TEST_RESULTS_DIR --report-junit --report-junit-filename rspec.xml'
+    - 'grep -oP "<package name=\"[^\"]*HamsterWheel\\.Flows[^\"]*\"[^>]*line-rate=\"\\K[0-9.]+" $TEST_RESULTS_DIR/coverage.cobertura.*.xml | head -1 | awk "{printf \"Total | %.2f%%\\n\", \$1 * 100}" || true'
+    - bash ci/coverage-gate.sh "$TEST_RESULTS_DIR"
+  coverage: '/Total\s*\|\s*(\d+(?:\.\d+)?)%/'
+  artifacts:
+    when: always
+    paths:
+      - $TEST_RESULTS_DIR/rspec.xml
+      - $INTEGRATION_TEST_RESULTS_DIR/rspec.xml
+    reports:
+      junit:
+        - $TEST_RESULTS_DIR/rspec.xml
+        - $INTEGRATION_TEST_RESULTS_DIR/rspec.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: $TEST_RESULTS_DIR/coverage.cobertura.*.xml
+
+package-alpha:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "alpha"
+      changes:
+        - .gitlab-ci.yml
+        - src/**/*
+  script:
+    - dotnet build -c Release --no-restore
+    - dotnet pack -c Release --version-suffix $CI_COMMIT_BRANCH-$CI_JOB_ID
+    # Configure GitLab package registry as a NuGet source
+    - dotnet nuget add source "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/nuget/index.json" --name gitlab --username gitlab-ci-token --password $CI_JOB_TOKEN --store-password-in-clear-text
+    # Push the package to the project's package registry
+    - dotnet nuget push "src/**/bin/Release/*.nupkg" --source gitlab
+  environment: staging
+
+package:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      changes:
+        - src/**/*
+  script:
+    - dotnet build -c Release --no-restore
+    - dotnet pack -c Release
+    # Configure GitLab package registry as a NuGet source
+    - dotnet nuget add source "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/nuget/index.json" --name gitlab --username gitlab-ci-token --password $CI_JOB_TOKEN --store-password-in-clear-text
+    # Push the package to the project's package registry
+    - dotnet nuget push "src/**/bin/Release/*.nupkg" --source gitlab
+    # Push the package to the Nuget.org feed
+    - dotnet nuget push "src/**/bin/Release/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key $nuget_key
+  environment: production

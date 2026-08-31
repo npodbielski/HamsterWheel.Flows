@@ -1,0 +1,40 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{csproj,props,targets,xml,xaml,json,yml,yaml}]
+indent_size = 2
+
+[*.cs]
+# Braces are required on every single-statement control statement
+# (if/else/for/foreach/while/do — the no-one-line-control-statement
+# convention). Each toolchain reads its own key:
+#   csharp_prefer_braces (IDE0011) — Roslyn: VS, VS Code, `dotnet format`
+#   braces_for_* ("required" = always enforce) — ReSharper: Rider, `jb` CLT
+# Enforced in CI by the style-check job: `dotnet format style --verify-no-changes`.
+csharp_prefer_braces = true:error
+braces_for_ifelse = required
+braces_for_for = required
+braces_for_foreach = required
+braces_for_while = required
+braces_for_dowhile = required
+braces_for_using = required
+braces_for_lock = required
+braces_for_fixed = required
+# Prefer `var` when the type is obvious (suggestion only — the build does not
+# enforce code style).
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+# File-scoped namespaces (error: the IDE flags violations, `dotnet format style`
+# fixes them).
+csharp_style_namespace_declarations = file_scoped:error
+# Nullable reference types are enabled in every project (<Nullable>enable</Nullable>);
+# new files inherit the annotations. Keep `!` / `#nullable` suppressions rare and
+# deliberate, with a comment when the justification is not obvious.
