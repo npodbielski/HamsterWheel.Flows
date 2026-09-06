@@ -2,6 +2,7 @@
   <Folder Name="/Src/">
     <Project Path="src\HamsterWheel.Flows.Abstractions\HamsterWheel.Flows.Abstractions.csproj" />
     <Project Path="src\HamsterWheel.Flows\HamsterWheel.Flows.csproj" />
+    <Project Path="src\HamsterWheel.Flows.Api\HamsterWheel.Flows.Api.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="test\HamsterWheel.Flows.Tests\HamsterWheel.Flows.Tests.csproj" />

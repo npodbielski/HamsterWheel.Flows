@@ -9,17 +9,19 @@ public abstract class ComplexInputTaskSource<T> : IComplexInputSource<T>
 
     public async IAsyncEnumerable<T> Get([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (EntireInput is { IsSet: true, IsSingle: true })
+        switch (EntireInput)
         {
-            yield return await EntireInput.GetSingle();
-            yield break;
-        }
-
-        if (EntireInput is { IsSet: true, IsMulti: true })
-        {
-            await foreach (var input in EntireInput.GetMulti().WithCancellation(cancellationToken))
+            case { IsSet: true, IsSingle: true }:
+                yield return await EntireInput.GetSingle();
+                yield break;
+            case { IsSet: true, IsMulti: true }:
             {
-                yield return input;
+                await foreach (var input in EntireInput.GetMulti().WithCancellation(cancellationToken))
+                {
+                    yield return input;
+                }
+
+                break;
             }
         }
 
@@ -29,5 +31,5 @@ public abstract class ComplexInputTaskSource<T> : IComplexInputSource<T>
         }
     }
 
-    public abstract IAsyncEnumerable<T> GetImpl(CancellationToken cancellationToken = default);
+    protected abstract IAsyncEnumerable<T> GetImpl(CancellationToken cancellationToken = default);
 }

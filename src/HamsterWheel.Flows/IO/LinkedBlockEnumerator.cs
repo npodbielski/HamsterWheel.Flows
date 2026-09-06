@@ -36,31 +36,33 @@ public class LinkedBlockEnumerator<T>
     {
         //this should be completed once first result reaches enumerator
         await _initializedTaskSource.Task;
-        if (!token.IsCancellationRequested)
+        if (token.IsCancellationRequested)
         {
-            while (_stack.TryDequeue(out var taskCompletionSource))
-            {
-                var valueTask = taskCompletionSource.Task;
-                var nextValueOrCompletedTask = await Task.WhenAny(valueTask, _owner.Completion);
-                if (nextValueOrCompletedTask == valueTask)
-                {
-                    yield return await valueTask;
-                }
-                else
-                {
-                    //valueTask cannot be awaited because it is placeholder task that was added to allow target block to wait for Completion
-                    // it is done because we have no means to predict when source block for the link will finish its computation
-                    while (_stack.TryDequeue(out var availableTaskSource))
-                    {
-                        var task = availableTaskSource.Task;
-                        if (task.IsCompleted)
-                        {
-                            yield return await task;
-                        }
-                    }
+            yield break;
+        }
 
-                    yield break;
+        while (_stack.TryDequeue(out var taskCompletionSource))
+        {
+            var valueTask = taskCompletionSource.Task;
+            var nextValueOrCompletedTask = await Task.WhenAny(valueTask, _owner.Completion);
+            if (nextValueOrCompletedTask == valueTask)
+            {
+                yield return await valueTask;
+            }
+            else
+            {
+                //valueTask cannot be awaited because it is placeholder task that was added to allow target block to wait for Completion
+                // it is done because we have no means to predict when source block for the link will finish its computation
+                while (_stack.TryDequeue(out var availableTaskSource))
+                {
+                    var task = availableTaskSource.Task;
+                    if (task.IsCompleted)
+                    {
+                        yield return await task;
+                    }
                 }
+
+                yield break;
             }
         }
     }

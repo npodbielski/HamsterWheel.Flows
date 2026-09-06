@@ -99,17 +99,40 @@ public partial class FlowBackgroundService(
     private async Task RunFlow(IScheduledFlowData message, CancellationToken token = default)
     {
         await using var scope = Services.CreateAsyncScope();
-        var flowRunner = scope.ServiceProvider.GetRequiredService<IFlowRunner>();
         try
         {
+            var flowRunner = scope.ServiceProvider.GetService<IFlowRunner>()
+                ?? throw new NoFlowRunnerException();
             await HandleFlowStarted(message);
             var result = await flowRunner.RunAsync(message, token);
+            CompleteRun(message, result, null);
             await HandleFlowCompleted(message, result);
         }
         catch (Exception e)
         {
+            CompleteRun(message, null, e);
             await HandleFlowError(message, e);
             FailedToScheduleFlow(e, message.FlowName.ToString()!);
+        }
+    }
+
+    /// <summary>
+    /// Completes the optional in-run completion signal (ScheduledFlowData.Completion)
+    /// </summary>
+    private static void CompleteRun(IScheduledFlowData message, IFlowRunResult? result, Exception? error)
+    {
+        if (message is not ScheduledFlowData data || data.Completion is null)
+        {
+            return;
+        }
+
+        if (result is not null)
+        {
+            data.Completion.TrySetResult(result);
+        }
+        else
+        {
+            data.Completion.TrySetException(error!);
         }
     }
 }

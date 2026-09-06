@@ -15,6 +15,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\src\HamsterWheel.Flows.Abstractions\HamsterWheel.Flows.Abstractions.csproj" />
       <ProjectReference Include="..\..\src\HamsterWheel.Flows\HamsterWheel.Flows.csproj" />
+      <ProjectReference Include="..\..\src\HamsterWheel.Flows.Api\HamsterWheel.Flows.Api.csproj" />
     </ItemGroup>
 
 </Project>

@@ -11,7 +11,7 @@ public partial class FlowScheduler(IServiceProvider services, Channel<IScheduled
     private readonly ConcurrentDictionary<(FlowName, Timer), Timer> _timers = [];
     //serializes timer add+start (Schedule) with remove+stop+dispose (CancelFor),
     //so a cancel can never dispose a timer before it is started
-    private readonly object _timerLock = new();
+    private readonly Lock _timerLock = new();
 
     protected bool TriggersLoaded { get; set; }
 

@@ -2,6 +2,9 @@
 
     <PropertyGroup>
         <RootNamespace>HamsterWheel.Flows</RootNamespace>
+        <!--Clears the single TargetFramework inherited from the root Directory.Build.props so this
+        multi-target project packs correctly (NU5026: cross-TFM assembly reference during pack)-->
+        <TargetFramework></TargetFramework>
         <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     </PropertyGroup>

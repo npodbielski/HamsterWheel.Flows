@@ -77,7 +77,7 @@ public class ComplexInputTaskSourceTests
 
         public override bool AllSingle => EntireInput.IsSingle || !EntireInput.IsSet;
 
-        public override IAsyncEnumerable<string> GetImpl(CancellationToken cancellationToken = default)
+        protected override IAsyncEnumerable<string> GetImpl(CancellationToken cancellationToken = default)
         {
             GetImplInvoked = true;
             return ImplItems;

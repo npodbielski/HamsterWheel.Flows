@@ -17,6 +17,11 @@ public record ScheduledFlowData(
     public static ScheduledFlowData NewSubFlow(IFlowName flowName, string? userId,
         object? input) => new(Guid.NewGuid(), DateTimeOffset.UtcNow, flowName, userId, input, true);
 
+    /// <summary>
+    /// Allows reading the flow run result from a client waiting on this run
+    /// </summary>
+    public TaskCompletionSource<IFlowRunResult>? Completion { get; init; }
+
     public void Validate()
     {
         var dataValidator = new DataValidatorFactory().For(this);

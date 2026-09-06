@@ -3,7 +3,8 @@
     <Import Project="Nuget.props"/>
 
     <PropertyGroup>
-        <LangVersion>13</LangVersion>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>14</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>

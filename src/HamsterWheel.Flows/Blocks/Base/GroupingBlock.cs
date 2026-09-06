@@ -9,10 +9,7 @@ public abstract class GroupingBlock<TInput, TOutput, TInputSource> : BlockBase, 
 {
     private readonly BlockResult<TOutput[]> _result;
 
-    protected GroupingBlock()
-    {
-        _result = new BlockResult<TOutput[]>(this);
-    }
+    protected GroupingBlock() => _result = new BlockResult<TOutput[]>(this);
 
     public IBlockResult<TOutput[]> Result => _result;
     public bool SingleOutput => Inputs.AllSingle;

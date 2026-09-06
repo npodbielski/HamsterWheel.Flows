@@ -98,7 +98,7 @@ public class JoinStringsTaskSource : IComplexInputSource<JoinStringsInput>
                 First.IsSingle ? await First.GetSingle() : enumerator1.Current,
                 Second.IsSingle ? await Second.GetSingle() : enumerator2.Current,
             };
-            
+
             if (Third.IsSet)
             {
                 chunks.Add(Third.IsSingle ? await Third.GetSingle() : enumerator3.Current);
@@ -116,7 +116,7 @@ public class JoinStringsTaskSource : IComplexInputSource<JoinStringsInput>
 
             yield return new JoinStringsInput
             {
-                Chunks = chunks.ToArray(),
+                Chunks = [.. chunks],
                 Delimiter = Delimiter.IsSingle ? await Delimiter.GetSingle() : enumerator6.Current
             };
         }

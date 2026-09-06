@@ -55,7 +55,7 @@ public static class FlowApiBuilder
         return app;
     }
 
-    private static int GetFreePort()
+    internal static int GetFreePort()
     {
         var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();

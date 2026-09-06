@@ -11,7 +11,7 @@ public class SimpleRenderingService : IRenderingService
         var span = template.AsSpan();
         var renderedBuilder = new StringBuilder();
         var chunkIndexStart = 0;
-        int chunkIndexEnd = 0;
+        var chunkIndexEnd = 0;
         for (var i = 0; i < span.Length; i++)
         {
             var nextTwoChars = span.Length > i+1 ? span[i..(i + 2)] : null;

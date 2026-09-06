@@ -10,7 +10,6 @@ public class TaskSource<T> : ITaskSource<T>
 
     public TaskSource(T defaultValue) => Const = defaultValue;
 
-    private T _constSource = default!;
     private Task<T>? _singleSource;
     private List<IAsyncEnumerable<T>> _multiSources = [];
     private bool _isConst;
@@ -73,43 +72,45 @@ public class TaskSource<T> : ITaskSource<T>
 
     public T Const
     {
-        get => _isConst ? _constSource : throw new ConstTaskSourceNotSetException();
+        get => _isConst ? field : throw new ConstTaskSourceNotSetException();
         set
         {
             _isConst = true;
             _singleSource = null;
             _multiSources = [];
-            _constSource = value;
+            field = value;
         }
-    }
+    } = default!;
 
     public async IAsyncEnumerable<T> GetMulti()
     {
-        if (IsSet)
+        if (!IsSet)
         {
-            if (IsMulti)
+            yield break;
+        }
+
+        if (IsMulti)
+        {
+            IAsyncEnumerable<T> combined;
+            if (_multiSources.Count > 0)
             {
-                IAsyncEnumerable<T> combined;
-                if (_multiSources.Count > 0)
-                {
-                    combined = _multiSources.Skip(1)
-                        .Aggregate(_multiSources[0], (current, source) => current.Concat(source));
-                }
-                else
-                {
-                    combined = _multiSources[0];
-                }
-
-                await foreach (var item in combined)
-                {
-                    yield return item;
-                }
-
-                yield break;
+                combined = _multiSources.Skip(1)
+                    .Aggregate(_multiSources[0], (current, source) => current.Concat(source));
+            }
+            else
+            {
+                combined = _multiSources[0];
             }
 
-            yield return await GetSingle();
+            await foreach (var item in combined)
+            {
+                yield return item;
+            }
+
+            yield break;
         }
+
+        yield return await GetSingle();
     }
 
     public async Task<T> GetSingle()

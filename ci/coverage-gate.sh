@@ -24,7 +24,7 @@ fi
 
 # Extract line-rate for the HamsterWheel.Flows package specifically (not the overall
 # rate which may include other measured assemblies).
-LC=$(grep -oP '<package name="[^"]*HamsterWheel\.Flows[^"]*"[^>]*line-rate="\K[0-9.]+' "$XML" | head -1)
+LC=$(grep -oP '<package name="[^"]*HamsterWheel\.Flows"[^>]*line-rate="\K[0-9.]+' "$XML" | head -1)
 # Fallback to overall rate if package-specific not found
 if [ -z "$LC" ]; then
   LC=$(grep -oP 'line-rate="\K[0-9.]+' "$XML" | head -1)

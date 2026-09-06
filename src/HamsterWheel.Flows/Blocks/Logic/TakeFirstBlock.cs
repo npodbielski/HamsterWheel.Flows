@@ -8,14 +8,13 @@ public class TakeFirstBlock : PipelineBlock<object, object?, SingleInputTaskSour
 {
     public override Task<object?> RunForInput(object input, CancellationToken token)
     {
-        var source = input;
-        if (source is IEnumerable enumerable)
+        if (input is IEnumerable enumerable)
         {
             Log("Finished iterating input.");
             return Task.FromResult(enumerable.Cast<object?>().First());
         }
 
         Log("Input is not iterable. Returning input object...");
-        return Task.FromResult<object?>(source);
+        return Task.FromResult<object?>(input);
     }
 }

@@ -40,7 +40,7 @@ tests:
     - 'dotnet test --no-restore test/HamsterWheel.Flows.Tests/HamsterWheel.Flows.Tests.csproj --coverlet --coverlet-output-format cobertura --results-directory $TEST_RESULTS_DIR --report-junit --report-junit-filename rspec.xml'
     # integration tests (no coverage - they exercise the library end-to-end)
     - 'dotnet test --no-restore test/HamsterWheel.Flows.IntegrationTests/HamsterWheel.Flows.IntegrationTests.csproj --results-directory $INTEGRATION_TEST_RESULTS_DIR --report-junit --report-junit-filename rspec.xml'
-    - 'grep -oP "<package name=\"[^\"]*HamsterWheel\\.Flows[^\"]*\"[^>]*line-rate=\"\\K[0-9.]+" $TEST_RESULTS_DIR/coverage.cobertura.*.xml | head -1 | awk "{printf \"Total | %.2f%%\\n\", \$1 * 100}" || true'
+    - 'grep -oP "<package name=\"[^\"]*HamsterWheel\\.Flows\"[^>]*line-rate=\"\\K[0-9.]+" $TEST_RESULTS_DIR/coverage.cobertura.*.xml | head -1 | awk "{printf \"Total | %.2f%%\\n\", \$1 * 100}" || true'
     - bash ci/coverage-gate.sh "$TEST_RESULTS_DIR"
   coverage: '/Total\s*\|\s*(\d+(?:\.\d+)?)%/'
   artifacts:
@@ -63,6 +63,8 @@ package-alpha:
       changes:
         - .gitlab-ci.yml
         - src/**/*
+        - Nuget.props
+        - Directory.Build.props
   script:
     - dotnet build -c Release --no-restore
     - dotnet pack -c Release --version-suffix $CI_COMMIT_BRANCH-$CI_JOB_ID
@@ -78,6 +80,8 @@ package:
     - if: $CI_COMMIT_BRANCH == "master"
       changes:
         - src/**/*
+        - Nuget.props
+        - Directory.Build.props
   script:
     - dotnet build -c Release --no-restore
     - dotnet pack -c Release

@@ -10,7 +10,7 @@ public class SaveFileInputTaskSource : ComplexInputTaskSource<SaveFileInput>
     public TaskSource<string> Directory { get; } = new();
     public override bool AllSingle => ((ITaskSource[]) [FileName, Contents, Directory]).All(i => i.IsSingle);
 
-    public override async IAsyncEnumerable<SaveFileInput> GetImpl(
+    protected override async IAsyncEnumerable<SaveFileInput> GetImpl(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (FileName.IsSingle && Contents.IsSingle && Directory.IsSingle)

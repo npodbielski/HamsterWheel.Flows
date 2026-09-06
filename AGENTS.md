@@ -15,6 +15,19 @@ Standard rules for AI coding agents (and humans) working in this repository.
 
 Flow: `feature branch` → MR → `alpha` (prerelease validated) → MR → `master` (release).
 
+## Versioning
+
+- **Bump the library version after every merge to `alpha`** — the `VersionPrefix`
+  in `Nuget.props` is bumped (in the merge MR or a follow-up one) so every
+  `alpha`/`master` cycle publishes a new package version and a duplicate-version
+  push can never happen.
+- Semantic versioning:
+  - **small change, bugfix** → patch: `0.6.0 → 0.6.1`
+  - **new feature, backward compatible** → minor: `0.6.0 → 0.7.0`
+  - **breaking API change** → major: `1.1.2 → 2.0.0` — **except for pre-1.0
+    releases** (like the current `0.x.y`), where a breaking change is expressed
+    as a minor bump: `0.6.0 → 0.7.0` (pre-1.0, the minor component acts as "major")
+
 ## Pipeline
 
 - `build` — builds `HamsterWheel.Flows.slnx`
