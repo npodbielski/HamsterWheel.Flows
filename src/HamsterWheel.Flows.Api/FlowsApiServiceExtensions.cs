@@ -1,5 +1,6 @@
 using HamsterWheel.Flows.Runner;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace HamsterWheel.Flows.Api;
@@ -7,16 +8,16 @@ namespace HamsterWheel.Flows.Api;
 public static class FlowsApiServiceExtensions
 {
     /// <summary>
-    /// Registers the default IFlowRunStarter (ChannelFlowRunStarter) and, when no FlowBackgroundService
-    /// derivative is registered yet, registers FlowBackgroundService as the hosted service reading the
-    /// flow channel. Hosts with a custom FlowBackgroundService derivative should register it before this call.
+    /// Registers Flows.Api package services and Background Service. Does not override consuming
+    /// project overrides.
     /// </summary>
     public static IServiceCollection AddFlowsApi(this IServiceCollection services)
     {
-        services.AddSingleton<IFlowRunStarter, ChannelFlowRunStarter>();
+        services.TryAddSingleton<IFlowRunStarter, ChannelFlowRunStarter>();
+
         if (!HasFlowBackgroundService(services))
         {
-            services.AddHostedService<FlowBackgroundService>();
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, FlowBackgroundService>());
         }
 
         return services;

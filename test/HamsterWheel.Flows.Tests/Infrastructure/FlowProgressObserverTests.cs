@@ -37,6 +37,25 @@ public class FlowProgressObserverTests
     }
 
     [Fact]
+    public async Task WhenSubFlowRuns_ThenItsIdentityIsMarkedAsASubFlow()
+    {
+        //arrange
+        var observer = new RecordingObserver();
+        var block = new JoinStringsBlock();
+        var pipeline = block.InitBlock(observer: observer, isSubFlow: true);
+        block.Inputs.First.Const = "a";
+        block.Inputs.Second.Const = "b";
+        block.Inputs.Delimiter.Const = "-";
+
+        //act
+        await pipeline.Run().WaitSeconds(5);
+
+        //assert
+        observer.StartedRun.Should().NotBeNull();
+        observer.StartedRun!.IsSubFlow.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task WhenBlockFails_ThenBlockFailedCarriesTheBlockException()
     {
         //arrange

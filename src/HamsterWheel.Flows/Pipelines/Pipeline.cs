@@ -9,14 +9,23 @@ public class Pipeline(
     IFlowCoordinator flowCoordinator,
     IBlockFactory blockFactory,
     IPipelineLogger pipelineLogger,
-    IFlowProgressObserver? observer = null) : IPipeline
+    IFlowProgressObserver? observer = null,
+    IReadOnlyList<IFlowRunLogObserver>? runLogObservers = null) : IPipeline
 {
     private readonly TaskCompletionSource _pipelineInitializationTask = new();
+    private readonly IReadOnlyList<IFlowRunLogObserver>? runLogObservers = runLogObservers;
+    private IPipelineLogger logger = pipelineLogger;
     public IPipelineCreationOptions Options { get; } = creationOptions;
     public IFlowCoordinator Coordinator { get; set; } = flowCoordinator;
     public Task Initialized => _pipelineInitializationTask.Task;
 
-    public IPipelineLogger Logger => pipelineLogger;
+    /// <summary>
+    /// The logger of this run: the host's shared logger, wrapped (once the flow is attached) so that
+    /// the lines written through it also reach this run's <see cref="IFlowRunLogObserver"/>s with
+    /// this run's identity — which the shared logger cannot supply, being shared by every pipeline.
+    /// Unwrapped when nobody observes run logs.
+    /// </summary>
+    public IPipelineLogger Logger => logger;
     public IFlow Flow { get; private set; } = null!;
     public IFlowContext FlowContext { get; private set; } = null!;
     protected List<IPipelineBlock> Blocks { get; } = [];
@@ -27,6 +36,12 @@ public class Pipeline(
     {
         FlowContext = flowContext;
         Flow = flowContext.Flow;
+
+        if (runLogObservers is { Count: > 0 } observers)
+        {
+            //from here on the run has a name, so its log lines can be attributed to it
+            logger = new RunLogPipelineLogger(logger, GetCurrentRun(), observers);
+        }
     }
 
     public async Task<object?> Run(CancellationToken token = default)
@@ -34,7 +49,7 @@ public class Pipeline(
         await HandlePrePipelineInit();
         Init();
         await FinishPipelineInit();
-        var run = new FlowRunIdentity(Options.RunId, new FlowName(Flow.Name), Options.UserId);
+        var run = GetCurrentRun();
         NotifyFlowStarted(run);
         var estimatedMaxRunTime = (Flow.AverageTime is not null ? Flow.AverageTime * 3 : TimeSpan.FromMinutes(5)).Value;
         var delay = Task.Delay(estimatedMaxRunTime, token);
@@ -156,6 +171,12 @@ public class Pipeline(
                 $"Flow progress observer failed: {e.Message}", null, nameof(IFlowProgressObserver)));
         }
     }
+
+    //the run of this pipeline - what both its observers are told the lines and steps belong to
+    private FlowRunIdentity GetCurrentRun() => new(Options.RunId, new FlowName(Flow.Name), Options.UserId)
+    {
+        IsSubFlow = Options.IsSubFlow
+    };
 
     private void Init() => Blocks.ForEach(b => b.Init(FlowContext));
 }

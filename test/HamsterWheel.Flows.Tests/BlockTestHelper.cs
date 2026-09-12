@@ -16,11 +16,16 @@ namespace HamsterWheel.Flows.Tests;
 public static class BlockTestHelper
 {
     public static Pipeline InitBlock(this IPipelineBlock block, object? output = null,
-        Action<IServiceCollection>? configureServices = null, IFlowProgressObserver? observer = null) =>
-        ((IPipelineBlock[])[block]).InitBlock(output, configureServices, observer);
+        Action<IServiceCollection>? configureServices = null, IFlowProgressObserver? observer = null,
+        IReadOnlyList<IFlowRunLogObserver>? runLogObservers = null, Guid runId = default,
+        bool isSubFlow = false) =>
+        ((IPipelineBlock[])[block]).InitBlock(output, configureServices, observer, runLogObservers, runId,
+            isSubFlow);
 
     public static Pipeline InitBlock(this IPipelineBlock[] blocks, object? output = null,
-        Action<IServiceCollection>? configureServices = null, IFlowProgressObserver? observer = null)
+        Action<IServiceCollection>? configureServices = null, IFlowProgressObserver? observer = null,
+        IReadOnlyList<IFlowRunLogObserver>? runLogObservers = null, Guid runId = default,
+        bool isSubFlow = false)
     {
         var flowCoordinator = new FlowCoordinator();
         var blockFactory = Substitute.For<IBlockFactory>();
@@ -37,8 +42,8 @@ public static class BlockTestHelper
         flow.HaveOutput.Returns(true);
         flow.BuildOutput().Returns(output);
 
-        var pipeline = new Pipeline(new PipelineCreationOptions { IsSubFlow = false }, flowCoordinator, blockFactory,
-            pipelineLogger, observer);
+        var pipeline = new Pipeline(new PipelineCreationOptions { IsSubFlow = isSubFlow, RunId = runId },
+            flowCoordinator, blockFactory, pipelineLogger, observer, runLogObservers);
         flowCoordinator.AttachPipeline(pipeline, flowUserService);
         flowCoordinator.Authorize(flow);
 

@@ -33,7 +33,10 @@ New public surface: **one interface + one small record** in
 No other new public types.
 
 ```csharp
-public sealed record FlowRunIdentity(Guid RunId, IFlowName FlowName, string? UserId);
+public sealed record FlowRunIdentity(Guid RunId, IFlowName FlowName, string? UserId)
+{
+    public bool IsSubFlow { get; init; }   // a flow started by another flow runs under its own id
+}
 
 //Consumer projects register an implementation via DI to observe flow activity
 //(e.g. a Web UI showing running flows, progress and failing blocks).
@@ -55,13 +58,17 @@ public interface IFlowProgressObserver
 
 - `Pipeline` constructor: add an **optional** `IFlowProgressObserver? observer = null`
   parameter (optional so the 4 existing construction sites in tests keep working).
-- `PipelineFactory`: add `IServiceProvider` to the constructor and resolve
+- `PipelineFactory`: take the observers in the constructor (as `IEnumerable`, empty when nobody
+  registers one) — not `IServiceProvider`; resolving from the provider inside the factory is service
+  location, not DI.
   `GetService<IFlowProgressObserver>()` — `null` when unregistered, so the observer
   is **opt-in** and existing hosts see no behavior change. (Deliberately not
   registered in `AddFlowsModule` — an observer is a consumer concern, not a
   default.)
 - `Pipeline.Run` changes:
-  - build `FlowRunIdentity` from `Options.RunId`, `Flow` name and `Options.UserId`;
+  - build `FlowRunIdentity` from `Options.RunId`, `Flow` name, `Options.UserId` and
+    `Options.IsSubFlow` (a host cannot tell a sub-flow's run from the run a user waits for by id
+    alone, and needs to — DB log attribution and progress both key on it);
   - notify `FlowStarted(run, Blocks.Count)` after pipeline init;
   - run blocks as an array of `(block, task)` pairs and attach a `ContinueWith`
     per block that fires `BlockCompleted` / `BlockFailed` (with the faulting
@@ -108,7 +115,7 @@ services.AddSingleton<IFlowProgressObserver, FlowProgressStore>();
 1. `FlowRunIdentity` + `IFlowProgressObserver` in `HamsterWheel.Flows.Abstractions`.
 2. `Pipeline`: optional observer parameter; per-block and flow-level notifications
    in `Run` (with the safe-invocation helper).
-3. `PipelineFactory`: resolve the observer via `IServiceProvider`.
+3. `PipelineFactory`: receive the observer through the constructor.
 4. Unit tests (recording observer):
    - notification ordering (started → blocks → completed),
    - `BlockFailed` carries the block's exception,

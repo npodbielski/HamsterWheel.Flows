@@ -3,7 +3,6 @@ using HamsterWheel.Flows.IO;
 namespace HamsterWheel.Flows.Blocks.Base;
 
 public abstract class NoOutPipelineBlock<TInput, TInputSource> : BlockBase, IBlockInput<TInputSource>
-    where TInput : class
     where TInputSource : class, IInputSourceEnumerator<TInput>, new()
 {
     public override TInputSource Inputs { get; } = new();

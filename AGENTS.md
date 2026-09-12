@@ -17,10 +17,12 @@ Flow: `feature branch` → MR → `alpha` (prerelease validated) → MR → `mas
 
 ## Versioning
 
-- **Bump the library version after every merge to `alpha`** — the `VersionPrefix`
-  in `Nuget.props` is bumped (in the merge MR or a follow-up one) so every
-  `alpha`/`master` cycle publishes a new package version and a duplicate-version
-  push can never happen.
+- **`VersionPrefix` is one version above the latest release, and it stays there** —
+  with the latest release `0.7.0`, every merge to `alpha` publishes
+  `0.8.0-alpha-<job_id>`: the unique `-alpha-<job_id>` suffix is what makes a
+  duplicate-version push impossible, not a bump per merge. Raise
+  `VersionPrefix` only once a release catches up with it (0.8.0 released → the
+  next `alpha` line is `0.9.0`).
 - Semantic versioning:
   - **small change, bugfix** → patch: `0.6.0 → 0.6.1`
   - **new feature, backward compatible** → minor: `0.6.0 → 0.7.0`

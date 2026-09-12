@@ -13,11 +13,12 @@ public static class FlowsApiExtensions
 
     /// <summary>
     /// Maps POST {RouteTemplate} (default /api/flows/{flowName}/run) - the flow is resolved by name
-    /// from AddFlow&lt;T&gt;() registrations.
+    /// from AddFlow&lt;T&gt;() registrations. Result mapping: see <see cref="FlowRunResults"/>.
     /// </summary>
     public static IEndpointConventionBuilder MapFlowRunEndpoint(
         this IEndpointRouteBuilder endpoints, MapFlowRunEndpointOptions? options = null) =>
-        MapFlowRunEndpointInternal(endpoints, options, successResult: outcome => Results.Ok(outcome.Output));
+        MapFlowRunEndpointInternal(endpoints, options,
+            (outcome, timedOut) => FlowRunResults.Map(outcome, outcome => Results.Ok(outcome.Output), timedOut));
 
     /// <summary>
     /// Maps the flow run endpoint like MapFlowRunEndpoint, but enforces the flow's output type: a
@@ -26,25 +27,12 @@ public static class FlowsApiExtensions
     /// </summary>
     public static IEndpointConventionBuilder MapFlowRunEndpoint<TOutput>(
         this IEndpointRouteBuilder endpoints, MapFlowRunEndpointOptions? options = null) =>
-        MapFlowRunEndpointInternal(endpoints, options, successResult: outcome =>
-        {
-            if (outcome.Output is null)
-            {
-                //a flow with no output cannot satisfy a typed endpoint
-                throw new MismatchedFlowOutputTypeException<TOutput>(outcome.FlowName.ToString(), null);
-            }
-
-            if (!typeof(TOutput).IsAssignableFrom(outcome.Output.GetType()))
-            {
-                throw new MismatchedFlowOutputTypeException<TOutput>(outcome.FlowName.ToString(),
-                    outcome.Output.GetType());
-            }
-
-            return Results.Ok(outcome.Output);
-        });
+        MapFlowRunEndpointInternal(endpoints, options,
+            (outcome, timedOut) => FlowRunResults.Map<TOutput>(outcome, timedOut));
 
     private static IEndpointConventionBuilder MapFlowRunEndpointInternal(
-        IEndpointRouteBuilder endpoints, MapFlowRunEndpointOptions? options, Func<FlowRunOutcome, IResult> successResult)
+        IEndpointRouteBuilder endpoints, MapFlowRunEndpointOptions? options,
+        Func<FlowRunOutcome, Func<FlowRunOutcome, IResult>?, IResult> mapOutcome)
     {
         var route = options?.RouteTemplate ?? DefaultRouteTemplate;
 
@@ -54,47 +42,21 @@ public static class FlowsApiExtensions
             var runStarter = starter ?? throw new InvalidOperationException(
                 $"{nameof(IFlowRunStarter)} is not registered. " +
                 $"Call services.AddFlowsApi() (or register your own {nameof(IFlowRunStarter)}) before mapping the flow run endpoint.");
-            var flowInput = input is null || input.Value.ValueKind == JsonValueKind.Undefined
-                ? null
-                : input.Value.Deserialize<object?>();
+            //the body stays a JsonElement: this route resolves the flow by name at request time, so
+            //the input type is unknown here - FlowApplier coerces it to the flow's input type
+            var flowInput = input is { } body && body.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Null)
+                ? (object)body
+                : null;
             var outcome = await runStarter.RunAsync(
                 FlowName.FromString(flowName),
                 options?.GetUserId?.Invoke(context),
                 flowInput,
                 options?.RunTimeout ?? DefaultRunTimeout,
                 token);
-            return MapOutcome(outcome, successResult);
+            return mapOutcome(outcome, options?.TimedOutResult ?? TimedOutMapper(options));
         });
     }
 
-    private static IResult MapOutcome(FlowRunOutcome outcome, Func<FlowRunOutcome, IResult> successResult)
-    {
-        switch (outcome.Status)
-        {
-            case FlowRunStatus.Success:
-                return successResult(outcome);
-            case FlowRunStatus.Failed when outcome.Error is FlowNotFoundException:
-                return Results.NotFound(new
-                {
-                    error = "Flow not found",
-                    flowName = outcome.FlowName.ToString()
-                });
-            case FlowRunStatus.Failed:
-                return Results.Problem(
-                    title: "Flow run failed",
-                    detail: outcome.Error?.Message,
-                    statusCode: StatusCodes.Status500InternalServerError);
-            case FlowRunStatus.TimedOut:
-                //no terminal result within the budget; the run itself may still be in progress
-                return Results.Accepted(value: new
-                {
-                    flowName = outcome.FlowName.ToString(),
-                    runId = outcome.RunId,
-                    message =
-                        "Flow run has not reached a terminal result within the timeout budget and may still be running."
-                });
-            default:
-                return Results.Problem(statusCode: StatusCodes.Status500InternalServerError);
-        }
-    }
+    private static Func<FlowRunOutcome, IResult>? TimedOutMapper(MapFlowRunEndpointOptions? options) =>
+        options?.RunUrlTemplate is { } template ? outcome => FlowRunResults.Pending(outcome, template) : null;
 }

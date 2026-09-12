@@ -26,6 +26,8 @@ public static class FlowRunEndpointBuilder
         builder.Services.AddFlow<GreetFlow>();
         builder.Services.AddFlow<FailingFlow>();
         builder.Services.AddFlow<MismatchFlow>();
+        builder.Services.AddFlow<SlowFlow>();
+        builder.Services.AddFlow<EchoFlow>();
         builder.Services.AddSingleton(new FlowRunObserver());
         builder.Services.AddHostedService<CapturingFlowBackgroundService>();
         builder.Services.AddFlowsApi();
@@ -50,6 +52,23 @@ public static class FlowRunEndpointBuilder
         {
             RouteTemplate = "/api/typed/flows/{flowName}/run",
             GetUserId = _ => "endpoint-user"
+        });
+
+        //host without a queryable run resource: pending runs answer 202
+        app.MapFlowRunEndpoint(new MapFlowRunEndpointOptions
+        {
+            RouteTemplate = "/api/pending/flows/{flowName}/run",
+            GetUserId = _ => "endpoint-user",
+            RunTimeout = TimeSpan.FromMilliseconds(200)
+        });
+
+        //host with a run resource: pending runs answer 201 + Location
+        app.MapFlowRunEndpoint(new MapFlowRunEndpointOptions
+        {
+            RouteTemplate = "/api/created/flows/{flowName}/run",
+            GetUserId = _ => "endpoint-user",
+            RunTimeout = TimeSpan.FromMilliseconds(200),
+            RunUrlTemplate = "/core/flows/{flowName}/run/{runId}"
         });
 
         return app;
