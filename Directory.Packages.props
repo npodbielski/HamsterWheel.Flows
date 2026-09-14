@@ -11,8 +11,8 @@
     <PackageVersion Include="HamsterWheel.HLinq" Version="0.6.0-alpha-10558" />
     <PackageVersion Include="HamsterWheel.HLinq.AspNet" Version="0.6.0-alpha-10418" />
     <PackageVersion Include="HamsterWheel.HLinq.PgSql" Version="0.6.0-alpha-10418" />
-    <PackageVersion Include="HamsterWheel.CodeShare.NetStandard" Version="0.6.1" />
-    <PackageVersion Include="HamsterWheel.CodeShare.Common" Version="0.6.1" />
+    <PackageVersion Include="HamsterWheel.CodeShare.NetStandard" Version="0.6.2" />
+    <PackageVersion Include="HamsterWheel.CodeShare.Common" Version="0.6.2" />
     <!--Nuget packages-->
     <PackageVersion Include="CommandLineParser" Version="2.9.1" />
     <PackageVersion Include="Cronos" Version="0.11.1" />

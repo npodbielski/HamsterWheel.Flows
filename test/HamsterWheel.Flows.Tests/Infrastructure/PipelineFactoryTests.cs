@@ -101,6 +101,35 @@ public class PipelineFactoryTests
     }
 
     [Fact]
+    public void WhenCreate_ThenTheHostPipelineTypeIsCreatedAndAttachedToTheCoordinator()
+    {
+        //arrange
+        var coordinator = new FlowCoordinator();
+        var blockFactory = Substitute.For<IBlockFactory>();
+        var userPermissions = Substitute.For<IUserPermissionsService>();
+        var logger = Substitute.For<IPipelineLogger>();
+        var observer = Substitute.For<IFlowRunLogObserver>();
+        var factory = new HostPipelineFactory(coordinator, blockFactory, userPermissions, logger, [], [observer]);
+        var runId = Guid.NewGuid();
+
+        //act
+        var pipeline = factory.Create(c => c.RunId = runId);
+
+        //assert - the host pipeline is the one that runs, it is the one the coordinator holds, and it got
+        //the observers, so its log lines still reach them
+        pipeline.Should().BeOfType<HostPipeline>();
+        coordinator.ActivePipelines.Should().ContainSingle().Which.Should().BeSameAs(pipeline);
+        var flow = Substitute.For<IFlow>();
+        flow.Name.Returns("host-flow");
+        var flowContext = Substitute.For<IFlowContext>();
+        flowContext.Flow.Returns(flow);
+        pipeline.AttachFlowContext(flowContext);
+        pipeline.Logger.Log("a line of the host pipeline");
+        observer.Received(1).Log(Arg.Is<FlowRunIdentity>(run => run.RunId == runId && run.FlowName.Name == "host-flow"),
+            Arg.Is<IFlowLogMessage>(l => l.Message == "a line of the host pipeline"));
+    }
+
+    [Fact]
     public void WhenCreatedWithoutObservers_ThenThePipelineLogsStraightToTheHostLogger()
     {
         //arrange
@@ -122,4 +151,31 @@ public class PipelineFactoryTests
         logger.Received(1).Log("a line");
         pipeline.Logger.Should().BeSameAs(logger);
     }
+}
+
+//a host pipeline: what a host that has its own run behaviour (a transaction to roll back, a logo to print)
+//hands back from PipelineFactory.CreatePipeline
+file class HostPipeline(
+    IPipelineCreationOptions creationOptions,
+    IFlowCoordinator flowCoordinator,
+    IBlockFactory blockFactory,
+    IPipelineLogger pipelineLogger,
+    IFlowProgressObserver? observer = null,
+    IReadOnlyList<IFlowRunLogObserver>? runLogObservers = null)
+    : Pipeline(creationOptions, flowCoordinator, blockFactory, pipelineLogger, observer, runLogObservers);
+
+file class HostPipelineFactory(
+    IFlowCoordinator flowCoordinator,
+    IBlockFactory blockFactory,
+    IUserPermissionsService userPermissionsService,
+    IPipelineLogger pipelineLogger,
+    IEnumerable<IFlowProgressObserver>? progressObservers = null,
+    IEnumerable<IFlowRunLogObserver>? runLogObservers = null)
+    : PipelineFactory(flowCoordinator, blockFactory, userPermissionsService, pipelineLogger, progressObservers,
+        runLogObservers)
+{
+    protected override IPipeline CreatePipeline(IPipelineCreationOptions options,
+        IFlowProgressObserver? observer,
+        IReadOnlyList<IFlowRunLogObserver> runLogObservers) =>
+        new HostPipeline(options, flowCoordinator, blockFactory, pipelineLogger, observer, runLogObservers);
 }

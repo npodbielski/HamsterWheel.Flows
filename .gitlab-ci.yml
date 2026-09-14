@@ -67,7 +67,9 @@ package-alpha:
         - Directory.Build.props
   script:
     - dotnet build -c Release --no-restore
-    - dotnet pack -c Release --version-suffix $CI_COMMIT_BRANCH-$CI_JOB_ID
+    # --no-restore: pack would resolve the graph a second time, and a package published to two
+    # feeds under one version can come back different the second time round
+    - dotnet pack -c Release --version-suffix $CI_COMMIT_BRANCH-$CI_JOB_ID --no-restore
     # Configure GitLab package registry as a NuGet source
     - dotnet nuget add source "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/nuget/index.json" --name gitlab --username gitlab-ci-token --password $CI_JOB_TOKEN --store-password-in-clear-text
     # Push the package to the project's package registry
@@ -77,6 +79,7 @@ package-alpha:
 package:
   stage: deploy
   rules:
+    - if: $CI_COMMIT_BRANCH == "master" && $RELEASE == "true"
     - if: $CI_COMMIT_BRANCH == "master"
       changes:
         - src/**/*
@@ -84,7 +87,9 @@ package:
         - Directory.Build.props
   script:
     - dotnet build -c Release --no-restore
-    - dotnet pack -c Release
+    # --no-restore: pack would resolve the graph a second time, and a package published to two
+    # feeds under one version can come back different the second time round
+    - dotnet pack -c Release --no-restore
     # Configure GitLab package registry as a NuGet source
     - dotnet nuget add source "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/nuget/index.json" --name gitlab --username gitlab-ci-token --password $CI_JOB_TOKEN --store-password-in-clear-text
     # Push the package to the project's package registry
