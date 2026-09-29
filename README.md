@@ -1,4 +1,4 @@
-![Latest Release](https://g.np0.pl/hamster-wheel/flows/-/badges/release.svg) ![Status](https://g.np0.pl/hamster-wheel/flows/-/badges/pipeline.svg) ![Coverage](https://g.np0.pl/hamster-wheel/flows/-/badges/coverage.svg)
+![Latest Release](https://internetexception.com/wp-content/uploads/flows-badges/release.svg) ![Pipeline](https://internetexception.com/wp-content/uploads/flows-badges/pipeline.svg) ![Tests](https://internetexception.com/wp-content/uploads/flows-badges/tests.svg) ![Unit](https://internetexception.com/wp-content/uploads/flows-badges/coverage-unit.svg) ![Integration](https://internetexception.com/wp-content/uploads/flows-badges/coverage-integration.svg)
 
 # Introduction
 
@@ -40,7 +40,7 @@ Below you can find instructions how to get started using HamsterWheel.Flows in y
 
 First, reference the main package:
 ```xml
-<PackageReference Include="HamsterWheel.Flows" Version="0.5.0" />
+<PackageReference Include="HamsterWheel.Flows" Version="0.9.0" />
 ```
 
 After that register the module:
